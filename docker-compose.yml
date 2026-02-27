@@ -1,0 +1,160 @@
+version: "3.9"
+
+name: skyagentos
+
+x-common-env: &common-env
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  NVIDIA_API_KEY: ${NVIDIA_API_KEY}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+  LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-skyagentos-dev-key}
+  SKYVERN_BASE_URL: ${SKYVERN_BASE_URL:-http://skyvern:8000}
+  LITELLM_BASE_URL: http://litellm:4000
+  MEMORY_DB_PATH: /data/memory/skyagentos.db
+  MCP_WORKSPACE_PATH: /workspace/shared
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: skyagentos-litellm
+    command: ["--config", "/app/config/litellm_config.yaml", "--port", "4000"]
+    ports:
+      - "4000:4000"
+    environment:
+      <<: *common-env
+    volumes:
+      - ./litellm_config.yaml:/app/config/litellm_config.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4000/health/readiness"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: skyagentos-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  skyvern:
+    image: ghcr.io/skyvern-ai/skyvern:latest
+    container_name: skyagentos-skyvern
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *common-env
+      SKYVERN_LLM_BASE_URL: http://litellm:4000
+      SKYVERN_LLM_MODEL: vision_executor
+      SKYVERN_ENABLE_VISION: "true"
+    volumes:
+      - browser_artifacts:/var/lib/skyvern
+    depends_on:
+      litellm:
+        condition: service_healthy
+
+  mcp-workspace:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    container_name: skyagentos-mcp-workspace
+    command: ["python", "mcp_workspace_server.py"]
+    environment:
+      <<: *common-env
+    volumes:
+      - ./mcp_workspace_server.py:/app/mcp_workspace_server.py:ro
+      - shared_workspace:/workspace/shared
+      - memory_data:/data/memory
+    depends_on:
+      litellm:
+        condition: service_healthy
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    container_name: skyagentos-orchestrator
+    command: ["python", "main_orchestrator.py"]
+    environment:
+      <<: *common-env
+      MAX_SELF_CORRECTIONS: ${MAX_SELF_CORRECTIONS:-3}
+      SKYAGENT_OBJECTIVE: ${SKYAGENT_OBJECTIVE:-Research cloud GPU pricing trends and produce a sourced summary}
+    volumes:
+      - ./main_orchestrator.py:/app/main_orchestrator.py:ro
+      - ./mcp_workspace_server.py:/app/mcp_workspace_server.py:ro
+      - shared_workspace:/workspace/shared
+      - memory_data:/data/memory
+    depends_on:
+      litellm:
+        condition: service_healthy
+      skyvern:
+        condition: service_started
+      mcp-workspace:
+        condition: service_started
+
+  openclaw-gateway:
+    image: ghcr.io/openclaw/openclaw-gateway:2026.2.19
+    container_name: skyagentos-openclaw
+    ports:
+      - "3333:3333"
+    environment:
+      <<: *common-env
+      OPENCLAW_SKILLS_PATH: /workspace/skills
+      OPENCLAW_OTEL_MIGRATION: v2
+      OTEL_SERVICE_NAME: openclaw-gateway
+      OPENCLAW_WHATSAPP_ENABLED: ${OPENCLAW_WHATSAPP_ENABLED:-true}
+      OPENCLAW_TELEGRAM_ENABLED: ${OPENCLAW_TELEGRAM_ENABLED:-true}
+    volumes:
+      - ./openclaw_skill.js:/workspace/skills/openclaw_skill.js:ro
+      - ./main_orchestrator.py:/workspace/app/main_orchestrator.py:ro
+      - shared_workspace:/workspace/shared
+      - memory_data:/data/memory
+    depends_on:
+      litellm:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    container_name: skyagentos-otel
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./telemetry/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "9464:9464"
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: skyagentos-prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./telemetry/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: skyagentos-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  ollama_data:
+  browser_artifacts:
+  shared_workspace:
+  memory_data:
+  grafana_data:
