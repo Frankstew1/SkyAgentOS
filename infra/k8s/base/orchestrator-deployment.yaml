@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skyagentos-orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skyagentos-orchestrator
+  template:
+    metadata:
+      labels:
+        app: skyagentos-orchestrator
+    spec:
+      containers:
+        - name: orchestrator
+          image: skyagentos/orchestrator:dev
+          ports:
+            - containerPort: 8787
