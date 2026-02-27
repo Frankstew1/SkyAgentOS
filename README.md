@@ -1,85 +1,59 @@
-# SkyAgentOS v2
-## The Operating Environment for Autonomous AI Agents
+# SkyAgentOS
+### The Operating System for Autonomous AI Agents
 
-SkyAgentOS v2 is a Linux-based agent platform (not a kernel OS) that unifies:
-- **mission runner + orchestrator**
-- **browser-use runtime**
-- **desktop computer-use runtime**
-- **workspace + tool runtime**
-- **memory-backed planning and retries**
-- **policy engine + human controls**
-- **telemetry + eval harnesses**
+SkyAgentOS is a unified autonomous agent platform that combines modular skills, multi-agent crews, browser automation, memory, and planner → actor → validator loops in a single runtime.
 
-## v2 control/execution/data plane
+## Tagline
+**SkyAgentOS — The Operating System for Autonomous AI Agents.**
 
-### Control plane
-- gateway
-- mission-api
-- orchestrator
-- scheduler
-- model-router
-- policy-engine
-- memory-service
-- artifact-service
+## What’s Included
+- **OpenClaw-style skills** for event-driven triggering (WhatsApp/Telegram).
+- **Skyvern-style browser execution** with vision-capable task automation.
+- **CrewAI orchestration** with a `ResearchCrew` and sequential process flow.
+- **AutoGPT/BabyAGI-style looping** with iterative self-correction and run journaling.
+- **LiteLLM routing layer** with centralized model aliases.
+- **Ollama local inference** for low-latency reflection tasks.
+- **MCP workspace server** to share read/write context across the stack.
+- **OTEL v2 observability** wired into Prometheus + Grafana.
 
-### Execution plane
-- browser-worker
-- desktop-worker
-- tool-worker (scaffold)
-- workspace runtime (scaffold)
+## Architecture
+`docker-compose.yml` defines:
+- `openclaw-gateway` (OpenClaw 2026.2.19)
+- `skyvern`
+- `litellm`
+- `ollama`
+- `orchestrator`
+- `mcp-workspace`
+- `otel-collector`
+- `prometheus`
+- `grafana`
 
-### Data plane
-- Postgres/Redis/Object storage/Vector DB are documented targets
-- Current local runtime persists to SQLite + per-run filesystem
+## Key Files
+- `docker-compose.yml` — end-to-end service topology and shared volumes.
+- `litellm_config.yaml` — model aliases and provider routing.
+- `main_orchestrator.py` — CrewAI ResearchCrew + self-correction logic.
+- `openclaw_skill.js` — OpenClaw trigger skill (Codex CLI first, Python fallback).
+- `mcp_workspace_server.py` — shared workspace MCP read/write tools.
+- `orchestrator/Dockerfile` + `orchestrator/requirements.txt` — pinned orchestrator runtime.
+- `telemetry/` — OTEL collector + Prometheus scrape configuration.
 
-## Implemented v2 modules in this repo
+## Required Environment Variables
+- `OPENROUTER_API_KEY`
+- `NVIDIA_API_KEY`
+- `OPENAI_API_KEY`
+- `LITELLM_MASTER_KEY`
 
-### Backend scaffolds and cores
-- `services/orchestrator/src/mission/models.py`
-- `services/orchestrator/src/runtime/state_machine.py`
-- `services/orchestrator/src/runtime/dispatcher.py`
-- `services/orchestrator/src/agents/{planner,validator,reflector}.py`
-- `services/memory_service/src/retrieval.py`
-- `services/policy_engine/src/engine.py`
-- `services/artifact_service/src/store.py`
-- `workers/browser_worker/src/session_manager.py`
-- `workers/desktop_worker/src/controller.py`
+Optional:
+- `SKYVERN_BASE_URL`
+- `SKYAGENT_OBJECTIVE`
+- `MAX_SELF_CORRECTIONS`
+- `OPENCLAW_WHATSAPP_ENABLED`
+- `OPENCLAW_TELEGRAM_ENABLED`
 
-### Dashboard stubs
-- `apps/dashboard/src/pages/{live-run,missions,artifacts,memory,apps}.tsx`
-- `apps/dashboard/src/components/{ApprovalPanel,LiveDesktopStream}.tsx`
-
-### Infra/evals scaffolds
-- `infra/docker/docker-compose.dev.yml`
-- `infra/otel/collector.yaml`
-- `infra/prometheus/prometheus.yaml`
-- `infra/grafana/dashboards/mission-health.json`
-- `evals/browser/login_flow_eval.py`
-- `evals/desktop/file_ops_eval.py`
-- `evals/end_to_end/report_generation_eval.py`
-
-## Existing runtime upgraded
-Current `src/skyagentos/runtime/orchestrator.py` now supports:
-- runtime dispatch (`browser` / `desktop` / `workspace` hint)
-- per-run agent filesystem semantics (`agentfs/missions/<run_id>/...`)
-- pause/resume-aware execution through run controls
-- separate executor + validator persistence and telemetry
-
-## API controls
-- `POST /missions`
-- `POST /runs/{run_id}/pause`
-- `POST /runs/{run_id}/resume`
-- `GET /runs/{run_id}`
-
-## Quickstart
+## Quick Start
 ```bash
-PYTHONPATH=src SKYAGENT_DRY_RUN=true python main_orchestrator.py run --template web_research
-PYTHONPATH=src SKYAGENT_DRY_RUN=true python main_orchestrator.py run --template desktop_ops --runtime desktop
-PYTHONPATH=src python main_orchestrator.py serve
-PYTHONPATH=src SKYAGENT_DRY_RUN=true python main_orchestrator.py benchmark
+docker compose up -d --build
 ```
 
-## Tests
-```bash
-PYTHONPATH=src pytest -q
-```
+## Suggested GitHub Topics
+`ai-agents`, `autonomous-agents`, `agent-framework`, `multi-agent-systems`, `ai-automation`, `browser-automation`, `ai-orchestration`, `agent-os`, `ai-infrastructure`, `llm-agents`

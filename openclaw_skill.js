@@ -1,68 +1,65 @@
 /**
  * SkyAgentOS OpenClaw skill.
- * Trigger from WhatsApp/Telegram and enqueue via orchestrator HTTP API.
+ * Trigger from WhatsApp/Telegram events and launch orchestrator.
  */
 
-const http = require("node:http");
+const { spawn } = require("node:child_process");
 
-function postJson(url, payload) {
+function runCommand(bin, args, env) {
   return new Promise((resolve, reject) => {
-    const target = new URL(url);
-    const req = http.request(
-      {
-        protocol: target.protocol,
-        hostname: target.hostname,
-        port: target.port,
-        path: target.pathname,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-      (res) => {
-        let body = "";
-        res.on("data", (c) => (body += c.toString()));
-        res.on("end", () => {
-          if (res.statusCode >= 400) {
-            reject(new Error(`orchestrator api error ${res.statusCode}: ${body}`));
-            return;
-          }
-          resolve(body ? JSON.parse(body) : {});
-        });
+    const proc = spawn(bin, args, {
+      cwd: "/workspace/app",
+      env,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    proc.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    proc.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`${bin} failed (${code}): ${stderr}`));
+        return;
       }
-    );
-    req.on("error", reject);
-    req.write(JSON.stringify(payload));
-    req.end();
+      resolve(stdout.trim());
+    });
   });
 }
 
 module.exports = {
   name: "skyagentos_orchestrator_trigger",
-  description: "Trigger SkyAgentOS orchestrator API from OpenClaw events",
-  version: "2.0.0",
+  description: "Trigger CrewAI orchestrator from OpenClaw events",
+  version: "1.1.0",
 
   async run(context) {
     const objective = context?.message?.text || "Run default SkyAgentOS mission";
-    const channel = context?.channel || "unknown";
-    const endpoint = process.env.ORCHESTRATOR_API_URL || "http://orchestrator:8787/missions";
+    const env = {
+      ...process.env,
+      SKYAGENT_OBJECTIVE: objective,
+      OPENCLAW_TRIGGER_CHANNEL: context?.channel || "unknown",
+    };
 
-    const response = await postJson(endpoint, {
-      objective,
-      metadata: {
-        trigger_channel: channel,
-        user_id: context?.user?.id || null,
-      },
-    });
+    let output;
+    try {
+      output = await runCommand("codex", ["exec", "python", "main_orchestrator.py"], env);
+    } catch (_) {
+      output = await runCommand("python", ["main_orchestrator.py"], env);
+    }
 
     return {
-      status: "accepted",
+      status: "ok",
       objective,
-      endpoint,
-      response,
+      output,
       telemetry: {
         otel_migration: "v2",
-        trigger_channel: channel,
+        trigger_channel: context?.channel || "unknown",
       },
     };
   },
