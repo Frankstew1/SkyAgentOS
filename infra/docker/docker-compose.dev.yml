@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  gateway:
+    image: nginx:alpine
+    ports: ["8080:80"]
+  mission-api:
+    image: python:3.11-slim
+    command: ["python", "main_orchestrator.py", "serve"]
+  orchestrator:
+    image: python:3.11-slim
+    command: ["python", "main_orchestrator.py", "benchmark"]
+  scheduler:
+    image: python:3.11-slim
+    command: ["bash", "-lc", "while true; do sleep 30; done"]
+  model-router:
+    image: ghcr.io/berriai/litellm:main-stable
+  memory-service:
+    image: python:3.11-slim
+  artifact-service:
+    image: minio/minio:latest
+  policy-engine:
+    image: python:3.11-slim
+  browser-worker:
+    image: ghcr.io/skyvern-ai/skyvern:latest
+  desktop-worker:
+    image: python:3.11-slim
