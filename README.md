@@ -1,90 +1,59 @@
-# SkyAgentOS v2
-## Linux-based agent platform for autonomous missions
+# SkyAgentOS
+### The Operating System for Autonomous AI Agents
 
-SkyAgentOS v2 is an agent operating environment (not a kernel OS) combining:
-- mission orchestration
-- browser-use and desktop-use runtimes
-- workspace/tool runtimes
-- memory retrieval and policy enforcement
-- human-in-the-loop controls
-- telemetry + eval harnesses
+SkyAgentOS is a unified autonomous agent platform that combines modular skills, multi-agent crews, browser automation, memory, and planner → actor → validator loops in a single runtime.
 
-## Platform shape
+## Tagline
+**SkyAgentOS — The Operating System for Autonomous AI Agents.**
 
-### Control Plane
-- gateway
-- mission-api
-- orchestrator
-- scheduler
-- model-router
-- policy-engine
-- memory-service
-- artifact-service
-- notification-service
+## What’s Included
+- **OpenClaw-style skills** for event-driven triggering (WhatsApp/Telegram).
+- **Skyvern-style browser execution** with vision-capable task automation.
+- **CrewAI orchestration** with a `ResearchCrew` and sequential process flow.
+- **AutoGPT/BabyAGI-style looping** with iterative self-correction and run journaling.
+- **LiteLLM routing layer** with centralized model aliases.
+- **Ollama local inference** for low-latency reflection tasks.
+- **MCP workspace server** to share read/write context across the stack.
+- **OTEL v2 observability** wired into Prometheus + Grafana.
 
-### Execution Plane
-- browser-worker
-- desktop-worker
-- tool-worker
-- code-worker
-- file-worker
-- eval-worker
+## Architecture
+`docker-compose.yml` defines:
+- `openclaw-gateway` (OpenClaw 2026.2.19)
+- `skyvern`
+- `litellm`
+- `ollama`
+- `orchestrator`
+- `mcp-workspace`
+- `otel-collector`
+- `prometheus`
+- `grafana`
 
-### User Plane
-- dashboard
-- desktop-shell (scaffold)
-- admin-console (scaffold)
+## Key Files
+- `docker-compose.yml` — end-to-end service topology and shared volumes.
+- `litellm_config.yaml` — model aliases and provider routing.
+- `main_orchestrator.py` — CrewAI ResearchCrew + self-correction logic.
+- `openclaw_skill.js` — OpenClaw trigger skill (Codex CLI first, Python fallback).
+- `mcp_workspace_server.py` — shared workspace MCP read/write tools.
+- `orchestrator/Dockerfile` + `orchestrator/requirements.txt` — pinned orchestrator runtime.
+- `telemetry/` — OTEL collector + Prometheus scrape configuration.
 
-### Data Plane
-- Postgres schema migration scaffold (`data/migrations/001_init_core.sql`)
-- Redis/object/vector DB targets documented in `docs/architecture/v2-overview.md`
+## Required Environment Variables
+- `OPENROUTER_API_KEY`
+- `NVIDIA_API_KEY`
+- `OPENAI_API_KEY`
+- `LITELLM_MASTER_KEY`
 
-## Implemented now
+Optional:
+- `SKYVERN_BASE_URL`
+- `SKYAGENT_OBJECTIVE`
+- `MAX_SELF_CORRECTIONS`
+- `OPENCLAW_WHATSAPP_ENABLED`
+- `OPENCLAW_TELEGRAM_ENABLED`
 
-### Runtime & API (functional)
-- `src/skyagentos/runtime/orchestrator.py` multi-runtime orchestrator
-- `src/skyagentos/api/server.py` mission/run-control API
-- `src/skyagentos/tools/{skyvern_tool,desktop_tool}.py`
-- `src/skyagentos/desktop/daemon.py`
-- `src/skyagentos/memory/store.py` queue/state/memory persistence
-
-### v2 service scaffolds
-- `services/orchestrator/src/*` (models, state machine, dispatcher, agents)
-- `services/{memory_service,policy_engine,artifact_service}/*`
-- `services/{gateway,mission-api,scheduler,model-router,notification-service,mcp-hub,auth-service}/*`
-
-### Worker scaffolds
-- `workers/{browser_worker,desktop_worker,tool-worker,code-worker,file-worker,eval-worker}/src/*`
-
-### UI scaffolds
-- `apps/dashboard/src/pages/*`
-- `apps/dashboard/src/components/*`
-
-### Infra / deploy scaffolds
-- `infra/docker/docker-compose.dev.yml`
-- `infra/k8s/base/*`
-- `infra/terraform/main.tf`
-- `infra/otel/*`, `infra/prometheus/*`, `infra/grafana/dashboards/*`
-
-### Evals
-- `evals/browser/login_flow_eval.py`
-- `evals/desktop/file_ops_eval.py`
-- `evals/end_to_end/report_generation_eval.py`
-
-## Quickstart
+## Quick Start
 ```bash
-cp .env.example .env
-PYTHONPATH=src:. pytest -q
-PYTHONPATH=src python main_orchestrator.py serve
+docker compose up -d --build
 ```
 
-## Demo
-```bash
-bash demos/run_demo.sh
-```
-
-## Script entrypoints
-- `scripts/dev/up.sh`
-- `scripts/test/all.sh`
-- `scripts/seed/load_templates.sh`
-- `scripts/build/package.sh`
+## Suggested GitHub Topics
+`ai-agents`, `autonomous-agents`, `agent-framework`, `multi-agent-systems`, `ai-automation`, `browser-automation`, `ai-orchestration`, `agent-os`, `ai-infrastructure`, `llm-agents`
