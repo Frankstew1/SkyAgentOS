@@ -1,0 +1,4 @@
+services:
+  orchestrator:
+    environment:
+      SKYAGENT_DRY_RUN: "true"

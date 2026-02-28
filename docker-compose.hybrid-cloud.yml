@@ -1,0 +1,9 @@
+services:
+  orchestrator:
+    environment:
+      SKYAGENT_DRY_RUN: "false"
+
+  litellm:
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY or remove provider in litellm config}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY}

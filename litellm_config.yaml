@@ -1,0 +1,38 @@
+model_list:
+  - model_name: planner
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      extra_headers:
+        HTTP-Referer: https://github.com/skyagentos/skyagentos
+        X-Title: SkyAgentOS
+
+  - model_name: vision_executor
+    litellm_params:
+      model: nvidia/deepseek-ai/deepseek-r1
+      api_key: os.environ/NVIDIA_API_KEY
+      api_base: https://integrate.api.nvidia.com/v1
+
+  - model_name: local_reflector
+    litellm_params:
+      model: ollama/mistral:latest
+      api_base: http://ollama:11434
+
+  - model_name: manager
+    litellm_params:
+      model: openai/gpt-4.1
+      api_key: os.environ/OPENAI_API_KEY
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  json_logs: true
+  request_timeout: 120
+
+litellm_settings:
+  set_verbose: false
+
+router_settings:
+  routing_strategy: latency-based-routing
+  enable_pre_call_checks: true
+  allowed_fails: 2
+  cooldown_time: 15

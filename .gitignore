@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# local scratch
+.tmp/
+tmp/
+
+# runtime-generated mission artifacts
+agentfs/missions/
+workspace_artifacts/
