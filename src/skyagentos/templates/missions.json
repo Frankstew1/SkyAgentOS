@@ -1,0 +1,23 @@
+{
+  "web_research": {
+    "objective": "Research a topic on the web and produce a cited summary",
+    "domain": "general",
+    "permissions": ["web.browse", "workspace.read", "workspace.write"],
+    "budget_usd": 2.0,
+    "max_steps": 5
+  },
+  "desktop_ops": {
+    "objective": "Use desktop runtime to organize local files and summarize actions",
+    "domain": "general",
+    "permissions": ["desktop.control", "workspace.read", "workspace.write"],
+    "budget_usd": 2.5,
+    "max_steps": 4
+  },
+  "invoice_processing": {
+    "objective": "Open local invoice files, extract totals, and write a structured summary",
+    "domain": "general",
+    "permissions": ["desktop.control", "workspace.read", "workspace.write"],
+    "budget_usd": 3.0,
+    "max_steps": 6
+  }
+}

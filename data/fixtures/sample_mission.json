@@ -1,0 +1,5 @@
+{
+  "objective": "Gather evidence and produce bundle",
+  "policy_profile": "Operator Mode",
+  "runtime_preferences": ["browser", "desktop", "workspace", "tools"]
+}

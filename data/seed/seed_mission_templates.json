@@ -1,0 +1,5 @@
+[
+  {"name":"research_summary","objective":"Research a topic and produce a report"},
+  {"name":"desktop_file_ops","objective":"Organize files and create a summary"},
+  {"name":"watch_and_notify","objective":"Monitor a page and notify on changes"}
+]
