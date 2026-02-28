@@ -1,0 +1,9 @@
+{
+  "title": "Mission Health",
+  "timezone": "browser",
+  "panels": [
+    {"title": "Missions Started", "type": "timeseries"},
+    {"title": "Mission Failures", "type": "timeseries"},
+    {"title": "Validation Pass Rate", "type": "timeseries"}
+  ]
+}
