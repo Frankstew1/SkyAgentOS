@@ -1,59 +1,73 @@
-# SkyAgentOS
-### The Operating System for Autonomous AI Agents
+# SkyAgentOS v2
+## Linux-based agent platform for autonomous missions
 
-SkyAgentOS is a unified autonomous agent platform that combines modular skills, multi-agent crews, browser automation, memory, and planner → actor → validator loops in a single runtime.
+SkyAgentOS is a **mission runner + computer-use platform** (browser + desktop + tools + memory + human controls), not a kernel operating system.
 
-## Tagline
-**SkyAgentOS — The Operating System for Autonomous AI Agents.**
+## Recommended entry path (new users)
+1. Read `docs/quickstart-local.md`
+2. Run `python -m skyagentos.api.main doctor`
+3. Run `bash demos/run_demo.sh`
+4. Use API: `POST /missions`
 
-## What’s Included
-- **OpenClaw-style skills** for event-driven triggering (WhatsApp/Telegram).
-- **Skyvern-style browser execution** with vision-capable task automation.
-- **CrewAI orchestration** with a `ResearchCrew` and sequential process flow.
-- **AutoGPT/BabyAGI-style looping** with iterative self-correction and run journaling.
-- **LiteLLM routing layer** with centralized model aliases.
-- **Ollama local inference** for low-latency reflection tasks.
-- **MCP workspace server** to share read/write context across the stack.
-- **OTEL v2 observability** wired into Prometheus + Grafana.
+## Canonical vs scaffolded code
 
-## Architecture
-`docker-compose.yml` defines:
-- `openclaw-gateway` (OpenClaw 2026.2.19)
-- `skyvern`
-- `litellm`
-- `ollama`
-- `orchestrator`
-- `mcp-workspace`
-- `otel-collector`
-- `prometheus`
-- `grafana`
+### Canonical runtime (active)
+- `src/skyagentos/` (orchestrator, API, runtime tools, memory)
+- `docker-compose.yml` (local stack wiring)
+- `demos/` + `tests/`
 
-## Key Files
-- `docker-compose.yml` — end-to-end service topology and shared volumes.
-- `litellm_config.yaml` — model aliases and provider routing.
-- `main_orchestrator.py` — CrewAI ResearchCrew + self-correction logic.
-- `openclaw_skill.js` — OpenClaw trigger skill (Codex CLI first, Python fallback).
-- `mcp_workspace_server.py` — shared workspace MCP read/write tools.
-- `orchestrator/Dockerfile` + `orchestrator/requirements.txt` — pinned orchestrator runtime.
-- `telemetry/` — OTEL collector + Prometheus scrape configuration.
+### Scaffold/prototype surfaces (v2 expansion)
+- `services/` (service decomposition stubs)
+- `workers/` (worker stubs)
+- `apps/dashboard/` (UI stubs)
+- `infra/k8s`, `infra/terraform`, `deploy/`
 
-## Required Environment Variables
-- `OPENROUTER_API_KEY`
-- `NVIDIA_API_KEY`
-- `OPENAI_API_KEY`
-- `LITELLM_MASTER_KEY`
+## Repo map
+- `src/skyagentos`: runtime implementation
+- `services`: control-plane service modules and stubs
+- `workers`: execution-plane workers
+- `apps`: user-plane dashboards
+- `data`: migrations/seed/fixtures
+- `docs`: onboarding, architecture, troubleshooting, model routing, skills
+- `infra`: docker, k8s, terraform, observability assets
+- `evals`: benchmark and scenario checks
+- `tests`: unit/integration checks
 
-Optional:
-- `SKYVERN_BASE_URL`
-- `SKYAGENT_OBJECTIVE`
-- `MAX_SELF_CORRECTIONS`
-- `OPENCLAW_WHATSAPP_ENABLED`
-- `OPENCLAW_TELEGRAM_ENABLED`
+## Install / packaging
+SkyAgentOS is packaged from `src/` with `pyproject.toml`.
 
-## Quick Start
 ```bash
-docker compose up -d --build
+pip install -e .[dev]
+skyagentos doctor
 ```
 
-## Suggested GitHub Topics
-`ai-agents`, `autonomous-agents`, `agent-framework`, `multi-agent-systems`, `ai-automation`, `browser-automation`, `ai-orchestration`, `agent-os`, `ai-infrastructure`, `llm-agents`
+## CLI
+```bash
+skyagentos run --template web_research
+skyagentos serve
+skyagentos benchmark
+skyagentos doctor
+skyagentos demo
+skyagentos logs
+```
+
+## Security defaults
+- Grafana credentials are **required** (no default admin/admin).
+- Keep secrets only in `.env` (never commit real keys).
+- For local/offline runs set `SKYAGENT_DRY_RUN=true`.
+
+See `docs/troubleshooting.md` and `docs/model-routing.md` for runtime failure triage.
+
+## Runtime modes
+- local-only
+- hybrid-cloud
+- full-observability
+
+Detailed setup: `docs/quickstart-local.md`.
+
+## OSS hygiene
+- `LICENSE`
+- `CONTRIBUTING.md`
+- `CHANGELOG.md`
+- `.github/ISSUE_TEMPLATE/*`
+- `.github/pull_request_template.md`

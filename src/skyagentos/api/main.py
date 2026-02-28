@@ -3,10 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import socket
+import subprocess
 from pathlib import Path
 from uuid import uuid4
 
 from skyagentos.api.server import run_server
+from skyagentos.config import load_settings
 from skyagentos.models.schemas import Mission
 from skyagentos.runtime.orchestrator import Orchestrator, specialist_catalog
 
@@ -18,11 +21,12 @@ def load_template(name: str | None) -> dict:
 
 
 def _orchestrator() -> Orchestrator:
+    cfg = load_settings()
     return Orchestrator(
-        db_path=Path(os.getenv("MEMORY_DB_PATH", "/data/memory/skyagentos.db")),
-        litellm_base_url=os.getenv("LITELLM_BASE_URL", "http://litellm:4000"),
+        db_path=Path(cfg.memory_db_path),
+        litellm_base_url=cfg.litellm_base_url,
         litellm_key=os.getenv("LITELLM_MASTER_KEY", "skyagentos-dev-key"),
-        skyvern_url=os.getenv("SKYVERN_BASE_URL", "http://skyvern:8000"),
+        skyvern_url=cfg.skyvern_base_url,
     )
 
 
@@ -63,6 +67,38 @@ def run_benchmark() -> None:
     print(json.dumps({"benchmark": results}, indent=2))
 
 
+def _check_tcp(host: str, port: int, timeout: float = 1.0) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
+
+
+def doctor() -> None:
+    cfg = load_settings()
+    checks = {
+        "memory_path_parent_exists": Path(cfg.memory_db_path).parent.exists(),
+        "litellm_dns_resolves": _check_tcp("litellm", 4000) or _check_tcp("127.0.0.1", 4000),
+        "ollama_dns_resolves": _check_tcp("ollama", 11434) or _check_tcp("127.0.0.1", 11434),
+        "skyvern_dns_resolves": _check_tcp("skyvern", 8000) or _check_tcp("127.0.0.1", 8000),
+        "dry_run_enabled": cfg.dry_run,
+    }
+    print(json.dumps({"doctor": checks, "ok": all(v for k, v in checks.items() if k != "dry_run_enabled")}, indent=2))
+
+
+def up() -> None:
+    subprocess.run(["bash", "scripts/dev/up.sh"], check=True)
+
+
+def logs() -> None:
+    subprocess.run(["bash", "-lc", "docker compose logs --tail=120"], check=False)
+
+
+def demo() -> None:
+    subprocess.run(["bash", "demos/run_demo.sh"], check=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="SkyAgentOS runtime")
     sub = parser.add_subparsers(dest="command")
@@ -75,12 +111,25 @@ def main() -> None:
 
     sub.add_parser("serve", help="Start orchestrator HTTP API")
     sub.add_parser("benchmark", help="Run small benchmark/eval harness")
+    sub.add_parser("doctor", help="Validate local runtime prerequisites")
+    sub.add_parser("up", help="Bring up local stack via scripts/dev/up.sh")
+    sub.add_parser("logs", help="Tail docker compose logs")
+    sub.add_parser("demo", help="Run local demo workflow")
+
     args = parser.parse_args()
 
     if args.command == "serve":
         run_server()
     elif args.command == "benchmark":
         run_benchmark()
+    elif args.command == "doctor":
+        doctor()
+    elif args.command == "up":
+        up()
+    elif args.command == "logs":
+        logs()
+    elif args.command == "demo":
+        demo()
     else:
         if args.command is None:
             args.command = "run"
